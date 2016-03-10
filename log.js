@@ -1,13 +1,19 @@
 'use strict'
 var Progress = require('are-we-there-yet')
 var Gauge = require('gauge')
-var EE = require('events').EventEmitter
-var log = exports = module.exports = new EE
+var log = exports = module.exports =  new function () {}
 var util = require('util')
 
 var ansi = require('ansi')
-log.cursor = ansi(process.stderr)
-log.stream = process.stderr
+
+// By default, outputStream will point to stdout
+// and errorStream will point to stderr.
+// This can be changed to filestreams if required
+log.outputStream = process.stdout
+
+// By default, logs will be sent to stdout
+log.cursor = ansi(log.outputStream)
+log.stream = log.outputStream
 
 // by default, let ansi decide based on tty-ness.
 var colorEnabled = undefined
@@ -129,9 +135,12 @@ log.record = []
 log.maxRecordSize = 10000
 log.log = function (lvl, prefix, message) {
   var l = this.levels[lvl]
+
   if (l === undefined) {
-    return this.emit('error', new Error(util.format(
+/*    return this.emitLog('error', new Error(util.format(
       'Undefined log level: %j', lvl)))
+*/
+      return;
   }
 
   var a = new Array(arguments.length - 2)
@@ -154,9 +163,9 @@ log.log = function (lvl, prefix, message) {
             message: message,
             messageRaw: a }
 
-  this.emit('log', m)
-  this.emit('log.' + lvl, m)
-  if (m.prefix) this.emit(m.prefix, m)
+// set stream to stream of level or outputStream ( by default )
+  log.stream = log.streams[lvl] || log.outputStream
+
 
   this.record.push(m)
   var mrs = this.maxRecordSize
@@ -208,20 +217,26 @@ log.write = function (msg, style) {
   }
 
   style = style || {}
+
   if (style.fg) this.cursor.fg[style.fg]()
   if (style.bg) this.cursor.bg[style.bg]()
   if (style.bold) this.cursor.bold()
   if (style.underline) this.cursor.underline()
   if (style.inverse) this.cursor.inverse()
   if (style.beep) this.cursor.beep()
+
   this.cursor.write(msg).reset()
 }
 
-log.addLevel = function (lvl, n, style, disp) {
+log.addLevel = function (lvl, n, style, disp, stream) {
   if (!disp) disp = lvl
   this.levels[lvl] = n
   this.style[lvl] = style
-  if (!this[lvl]) this[lvl] = function () {
+ 
+ // set stream for this lvl
+  this.streams[lvl] = stream;
+
+ if (!this[lvl]) this[lvl] = function () {
     var a = new Array(arguments.length + 1)
     a[0] = lvl
     for (var i = 0; i < arguments.length; i ++) {
@@ -230,7 +245,8 @@ log.addLevel = function (lvl, n, style, disp) {
     return this.log.apply(this, a)
   }.bind(this)
   this.disp[lvl] = disp
-}
+
+ }
 
 log.prefixStyle = { fg: 'magenta' }
 log.headingStyle = { fg: 'white', bg: 'black' }
@@ -238,13 +254,11 @@ log.headingStyle = { fg: 'white', bg: 'black' }
 log.style = {}
 log.levels = {}
 log.disp = {}
+log.streams = {};
 log.addLevel('silly', -Infinity, { inverse: true }, 'sill')
 log.addLevel('verbose', 1000, { fg: 'blue', bg: 'black' }, 'verb')
 log.addLevel('info', 2000, { fg: 'green' })
 log.addLevel('http', 3000, { fg: 'green', bg: 'black' })
 log.addLevel('warn', 4000, { fg: 'black', bg: 'yellow' }, 'WARN')
-log.addLevel('error', 5000, { fg: 'red', bg: 'black' }, 'ERR!')
+log.addLevel('error', 5000, { fg: 'red', bg: 'black' }, 'ERR!', process.stderr)
 log.addLevel('silent', Infinity)
-
-// allow 'error' prefix
-log.on('error', function(){})
