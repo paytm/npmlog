@@ -142,7 +142,10 @@ log.log = function (lvl, prefix, message) {
 */
       return;
   }
+  // Don't do anything unless the log is less than
+  // the general log setting .
 
+  if (l < this.levels[this.level]) return;
   var a = new Array(arguments.length - 2)
   var stack = null
   for (var i = 2; i < arguments.length; i ++) {
@@ -186,7 +189,7 @@ log.emitLog = function (m) {
   if (this.progressEnabled) this.gauge.pulse(m.prefix)
   var l = this.levels[m.level]
   if (l === undefined) return
-  if (l < this.levels[this.level]) return
+
   if (l > 0 && !isFinite(l)) return
 
   var style = log.style[m.level]
@@ -232,7 +235,7 @@ log.addLevel = function (lvl, n, style, disp, stream) {
   if (!disp) disp = lvl
   this.levels[lvl] = n
   this.style[lvl] = style
- 
+
  // set stream for this lvl
   this.streams[lvl] = stream;
 
