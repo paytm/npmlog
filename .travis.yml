@@ -6,9 +6,10 @@ node_js:
   - iojs
   - "0.12"
   - "0.10"
+  - "0.10.24"
+  - "0.12.4"
+  - "4.2.3
   - "0.8"
 before_install:
   - "npm install -g npm"
 script: "npm test"
-notifications:
-    slack: npm-inc:kRqQjto7YbINqHPb1X6nS3g8

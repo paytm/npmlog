@@ -1,5 +1,7 @@
 # npmlog
 
+[![Build Status](https://travis-ci.org/paytm/lgr.svg?branch=master)](https://travis-ci.org/paytm/lgr)
+
 The logger util that npm uses.
 
 This logger is very basic.  It does the logging for npm.  It supports
